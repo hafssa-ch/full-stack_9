@@ -1,141 +1,393 @@
-# TP9 – Authentification et autorisation avec Node.js, Express, MongoDB et Redis
+# 🔐 TP9 – Authentification et autorisation avec Node.js, Express, MongoDB et Redis
 
 ## 📌 Description
 
-Ce projet implémente deux systèmes d’authentification complets :
+Ce projet implémente deux systèmes complets d’authentification et d’autorisation :
 
-- **Authentification par sessions** (stockées en mémoire ou Redis)
-- **Authentification sans état avec JWT** (access token + refresh token HTTP‑only)
+- ✅ Authentification par **sessions**
+- ✅ Authentification **JWT** (JSON Web Token)
+- ✅ Gestion des rôles (`user` / `admin`)
+- ✅ Hachage sécurisé des mots de passe avec `bcrypt`
+- ✅ Protection contre plusieurs attaques courantes :
+  - Rate limiting
+  - Injection NoSQL
+  - XSS basique
+- ✅ API REST sécurisée et organisée
 
-Il inclut la gestion des rôles (`user` / `admin`), le hachage sécurisé des mots de passe (`bcrypt`), la protection contre les attaques courantes (rate limiting, injection NoSQL, XSS basique) et une API REST documentée.
+Le projet utilise **Node.js**, **Express**, **MongoDB** .
 
-## 🛠️ Technologies utilisées
+---
 
-- Node.js + Express 4
-- MongoDB (avec Mongoose)
-- Redis (optionnel pour les sessions)
-- bcrypt, jsonwebtoken, express-session
-- helmet, express-rate-limit, cookie-parser
-- dotenv pour les variables d’environnement
+# 🛠️ Technologies utilisées
 
-## 📁 Structure du projet
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- bcrypt
+- jsonwebtoken
+- express-session
+- helmet
+- express-rate-limit
+- cookie-parser
+- dotenv
+
+---
+
+# 📁 Structure du projet
+
 ```
-uth-express-demo/
+auth-express-demo9/
 ├── config/
-│ └── db.js # Connexion MongoDB
+│   └── db.js
+│
 ├── controllers/
-│ └── authController.js # Logique métier
+│   └── authController.js
+│
 ├── middlewares/
-│ ├── auth.js # isAuthenticated, authorize
-│ └── errorHandler.js # Gestion centralisée des erreurs
+│   ├── auth.js
+│   └── errorHandler.js
+│
 ├── models/
-│ └── User.js # Modèle utilisateur (hachage bcrypt)
+│   └── User.js
+│
 ├── routes/
-│ └── authRoutes.js # Définition des endpoints
+│   └── authRoutes.js
+│
 ├── utils/
-│ └── tokenUtils.js # Génération et vérification JWT
-├── .env # Variables sensibles (ignoré)
+│   └── tokenUtils.js
+│
+├── .env
 ├── .env.example
-├── server.js
-└── package.json
+├── package.json
+└── server.js
 ```
 
-## 🔐 Endpoints de l’API
+---
 
-### Authentification par session
+# ⚙️ Installation du projet
 
-Méthode	Endpoint	Description	Authentification
-POST	/api/auth/register-session	Inscription d’un utilisateur	Non
-POST	/api/auth/login-session	Connexion (crée un cookie de session)	Non
-GET	/api/auth/logout-session	Déconnexion (détruit la session)	Oui (session)
-GET	/api/auth/profile-session	Récupère le profil	Oui (session)
-GET	/api/auth/admin-only-session	Accès réservé aux administrateurs	Oui (session + rôle admin)
-Authentification JWT
-Méthode	Endpoint	Description	Authentification
-POST	/api/auth/register-jwt	Inscription + génération tokens	Non
-POST	/api/auth/login-jwt	Connexion (access token + refresh token HTTP‑only)	Non
-GET	/api/auth/logout-jwt	Déconnexion (invalide refresh token)	Oui (cookie)
-GET	/api/auth/refresh-token	Obtient un nouvel access token	Oui (cookie)
-GET	/api/auth/profile-jwt	Récupère le profil	Oui (Bearer token)
-GET	/api/auth/admin-only-jwt	Accès administrateur	Oui (Bearer token + rôle admin)
+## 1️⃣ Cloner le projet
 
-🧪 Tests complets avec curl
-Prérequis : un terminal cmd ou bash
-Remarque : les cookies sont automatiquement gérés avec -c (save) et -b (load).
+```bash
+git clone <URL_DU_REPO>
+cd auth-express-demo
+```
 
-1. Sessions
-Inscription
-bash
-curl -X POST http://localhost:3000/api/auth/register-session -H "Content-Type: application/json" -d "{\"username\":\"alice\",\"email\":\"alice@example.com\",\"password\":\"alice123\"}" -c cookies.txt
-Connexion
-bash
-curl -X POST http://localhost:3000/api/auth/login-session -H "Content-Type: application/json" -d "{\"email\":\"alice@example.com\",\"password\":\"alice123\"}" -b cookies.txt -c cookies.txt
-Profil
-bash
-curl -X GET http://localhost:3000/api/auth/profile-session -b cookies.txt
-Accès admin (avant changement de rôle → 403)
-bash
-curl -X GET http://localhost:3000/api/auth/admin-only-session -b cookies.txt
-Déconnexion
-bash
-curl -X GET http://localhost:3000/api/auth/logout-session -b cookies.txt
-2. Changer le rôle d’un utilisateur (MongoDB)
-Depuis un shell MongoDB (ou Compass) :
+---
 
-bash
+## 2️⃣ Installer les dépendances
+
+```bash
+npm install
+```
+
+---
+
+## 3️⃣ Configurer les variables d’environnement
+
+Créer un fichier `.env` :
+
+```env
+PORT=3000
+
+MONGO_URI=mongodb://localhost:27017/auth_demo
+
+SESSION_SECRET=mySessionSecret
+
+JWT_ACCESS_SECRET=myAccessSecret
+JWT_REFRESH_SECRET=myRefreshSecret
+
+NODE_ENV=development
+```
+
+---
+
+## 4️⃣ Lancer MongoDB
+
+### Avec Docker
+
+```bash
+docker run -d \
+  --name mongodb-container \
+  -p 27017:27017 \
+  mongo
+```
+
+---
+
+## 5️⃣ Lancer le serveur
+
+```bash
+npm start
+```
+
+Le serveur démarre sur :
+
+```bash
+http://localhost:3000
+```
+
+<img width="527" height="138" alt="image" src="https://github.com/user-attachments/assets/30566c38-5b35-4675-a0d3-cdeb57d82edd" />
+
+---
+
+# 🔐 Authentification par Sessions
+
+## 📌 Endpoints
+
+| Méthode | Endpoint | Description | Protection |
+|---|---|---|---|
+| POST | `/api/auth/register-session` | Inscription utilisateur | pas mal |
+| POST | `/api/auth/login-session` | Connexion | pas mal |
+| GET | `/api/auth/logout-session` | Déconnexion |  Session |
+| GET | `/api/auth/profile-session` | Profil utilisateur |  Session |
+| GET | `/api/auth/admin-only-session` | Accès administrateur |  Admin |
+
+---
+
+# 🔑 Authentification JWT
+
+## 📌 Endpoints
+
+| Méthode | Endpoint | Description | Protection |
+|---|---|---|---|
+| POST | `/api/auth/register-jwt` | Inscription + tokens | pas mal |
+| POST | `/api/auth/login-jwt` | Connexion JWT | pas mal |
+| GET | `/api/auth/logout-jwt` | Déconnexion JWT | bon |
+| GET | `/api/auth/refresh-token` | Nouveau access token |  Cookie |
+| GET | `/api/auth/profile-jwt` | Profil utilisateur |  Bearer Token |
+| GET | `/api/auth/admin-only-jwt` | Accès administrateur |  Admin |
+
+---
+
+# 🧪 Tests avec CURL
+
+---
+
+# 1️⃣ Sessions
+
+## 🔹 Inscription
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register-session \-H "Content-Type: application/json" \-d "{\"username\":\"hafssachk\",\"email\":\"hafssachk@gmail.com\",\"password\":\"hafssa123\"" \-c cookies.txt
+```
+
+---
+
+## 🔹 Connexion
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login-session \
+-H "Content-Type: application/json" \-d "{\"email\":\"hafssachk@gmail.com\",\"password\":\"hafssa123\"}" \-b cookies.txt -c cookies.txt
+```
+
+---
+
+## 🔹 Profil utilisateur
+
+```bash
+curl -X GET http://localhost:3000/api/auth/profile-session \
+-b cookies.txt
+```
+
+---
+
+## 🔹 Accès administrateur
+
+```bash
+curl -X GET http://localhost:3000/api/auth/admin-only-session \
+-b cookies.txt
+```
+
+---
+
+## 🔹 Déconnexion
+
+```bash
+curl -X GET http://localhost:3000/api/auth/logout-session \
+-b cookies.txt
+```
+<img width="952" height="398" alt="image" src="https://github.com/user-attachments/assets/a92d68e4-513e-4426-9ce0-0752e0afaf18" />
+
+---
+
+# 2️⃣ Changer le rôle utilisateur
+
+Ouvrir MongoDB :
+
+```bash
 docker exec -it mongodb-container mongosh
+```
+
+Puis :
+
+```javascript
 use auth_demo
-db.users.updateOne({ username: "alice" }, { $set: { role: "admin" } })
-Reconnectez-vous puis testez à nouveau /admin-only-session → succès.
 
-3. JWT
-Inscription JWT
-bash
-curl -X POST http://localhost:3000/api/auth/register-jwt -H "Content-Type: application/json" -d "{\"username\":\"bob\",\"email\":\"bob@example.com\",\"password\":\"bob123\"}" -c jwtCookies.txt
-→ La réponse contient accessToken. Conservez‑le.
+db.users.updateOne(
+  { username: "hafssachk" },
+  { $set: { role: "admin" } }
+)
+```
 
-Connexion JWT
-bash
-curl -X POST http://localhost:3000/api/auth/login-jwt -H "Content-Type: application/json" -d "{\"email\":\"bob@example.com\",\"password\":\"bob123\"}" -c jwtCookies.txt
-Profil (remplacer TOKEN_RECU)
-bash
-curl -X GET http://localhost:3000/api/auth/profile-jwt -H "Authorization: Bearer TOKEN_RECU"
-Rafraîchir le token
-bash
-curl -X GET http://localhost:3000/api/auth/refresh-token -b jwtCookies.txt
-Déconnexion JWT
-bash
-curl -X GET http://localhost:3000/api/auth/logout-jwt -b jwtCookies.txt
-4. Sécurité : rate limiting
-Envoyez 6 mauvaises tentatives de connexion (session ou JWT) :
+Reconnectez-vous puis testez à nouveau :
 
-bash
-for /l %i in (1,1,6) do curl -X POST http://localhost:3000/api/auth/login-session -H "Content-Type: application/json" -d "{\"email\":\"alice@example.com\",\"password\":\"wrong\"}"
-À la 6e tentative, vous recevez :
+```bash
+/admin-only-session
+```
+<img width="953" height="437" alt="image" src="https://github.com/user-attachments/assets/ed8ec973-ccc7-446a-b9a7-f011ae61368f" />
 
-json
-{"success":false,"message":"Trop de tentatives, réessayez dans 15 minutes"}
-5. Protection contre l’injection NoSQL
-Inscription avec un nom d’utilisateur contenant $ :
+---
 
-bash
-curl -X POST http://localhost:3000/api/auth/register-session -H "Content-Type: application/json" -d "{\"username\":\"$admin\",\"email\":\"admin@test.com\",\"password\":\"pass\"}"
-Le middleware maison supprime les caractères $ et ., l’inscription réussit avec le nom admin.
+# 3️⃣ JWT
 
-✅ Checklist des fonctionnalités validées
-Fonctionnalité	Statut
-Inscription session	✔️
-Connexion session	✔️
-Profil session	✔️
-Déconnexion session	✔️
-Route protégée admin (session)	✔️
-Inscription JWT	✔️
-Connexion JWT (access + refresh token)	✔️
-Profil JWT (Bearer token)	✔️
-Refresh token	✔️
-Déconnexion JWT (invalidation)	✔️
-Changement de rôle (MongoDB)	✔️
-Rate limiting (5 tentatives)	✔️
-Anti‑injection NoSQL	✔️
-Hachage bcrypt (mots de passe)	✔️
+## 🔹 Inscription JWT
 
+```bash
+curl -X POST http://localhost:3000/api/auth/register-jwt \
+-H "Content-Type: application/json" \
+-d "{\"username\":\"bob\",\"email\":\"bob@example.com\",\"password\":\"bob123\"}" \
+-c jwtCookies.txt
+```
+
+---
+
+## 🔹 Connexion JWT
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login-jwt \
+-H "Content-Type: application/json" \
+-d "{\"email\":\"bob@example.com\",\"password\":\"bob123\"}" \
+-c jwtCookies.txt
+```
+
+---
+
+## 🔹 Profil JWT
+
+```bash
+curl -X GET http://localhost:3000/api/auth/profile-jwt \
+-H "Authorization: Bearer TOKEN_RECU"
+```
+
+---
+
+## 🔹 Rafraîchir le token
+
+```bash
+curl -X GET http://localhost:3000/api/auth/refresh-token \
+-b jwtCookies.txt
+```
+
+---
+
+## 🔹 Déconnexion JWT
+
+```bash
+curl -X GET http://localhost:3000/api/auth/logout-jwt \
+-b jwtCookies.txt
+```
+
+<img width="953" height="323" alt="image" src="https://github.com/user-attachments/assets/cce83541-49a7-4755-bf3e-7093a9b9db92" />
+
+---
+
+# 🛡️ Sécurité
+
+## ✅ Rate Limiting
+
+Après plusieurs mauvaises tentatives :
+
+```bash
+for /l %i in (1,1,6) do curl -X POST http://localhost:3000/api/auth/login-session \-H "Content-Type: application/json" \-d "{\"email\":\"alice@example.com\",\"password\":\"wrong\"}"
+```
+
+Réponse :
+
+```json
+{
+  "success": false,
+  "message": "Trop de tentatives, réessayez dans 15 minutes"
+}
+```
+<img width="955" height="271" alt="image" src="https://github.com/user-attachments/assets/db27f94f-fffa-4a0c-b757-59fba0132f55" />
+
+---
+
+## ✅ Protection contre l’injection NoSQL
+
+Test :
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register-session \-H "Content-Type: application/json" \-d "{\"username\":\"$admin\",\"email\":\"admin@test.com\",\"password\":\"pass\"}"
+```
+
+Le middleware supprime automatiquement :
+
+- `$`
+- `.`
+
+Résultat :
+
+```bash
+admin
+```
+
+---
+
+# 🔒 Sécurité implémentée
+
+| Fonctionnalité | Statut |
+|---|---|
+| Hachage bcrypt | ✅ |
+| Sessions sécurisées | ✅ |
+| JWT Access Token | ✅ |
+| JWT Refresh Token | ✅ |
+| Cookies HTTP-only | ✅ |
+| Protection NoSQL Injection | ✅ |
+| Rate Limiting | ✅ |
+| Helmet Security Headers | ✅ |
+| Gestion des rôles | ✅ |
+| Middleware d’authentification | ✅ |
+
+---
+
+# 📌 Exemple de workflow
+
+## 🔹 Session
+
+```text
+Register → Login → Session Cookie → Protected Route → Logout
+```
+
+## 🔹 JWT
+
+```text
+Register/Login → Access Token + Refresh Token
+→ Protected Route
+→ Refresh Token
+→ Logout
+```
+
+---
+
+# 🚀 Améliorations possibles
+
+- Utilisation de Redis pour stocker les sessions
+- Blacklist des JWT
+- Vérification email
+- Réinitialisation mot de passe
+- OAuth2 / Google Login
+- Double authentification (2FA)
+
+---
+
+# 👨‍💻 Auteur
+
+TP9 réalisé par :
+HAFSSA CHKOUKED
+
+Encadré par :
+Pr.Lachgar
+
+---
