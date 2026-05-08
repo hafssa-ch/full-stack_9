@@ -4,15 +4,15 @@
 
 Ce projet implémente deux systèmes complets d’authentification et d’autorisation :
 
-- ✅ Authentification par **sessions**
-- ✅ Authentification **JWT** (JSON Web Token)
-- ✅ Gestion des rôles (`user` / `admin`)
-- ✅ Hachage sécurisé des mots de passe avec `bcrypt`
-- ✅ Protection contre plusieurs attaques courantes :
+-  Authentification par **sessions**
+-  Authentification **JWT** (JSON Web Token)
+-  Gestion des rôles (`user` / `admin`)
+-  Hachage sécurisé des mots de passe avec `bcrypt`
+-  Protection contre plusieurs attaques courantes :
   - Rate limiting
   - Injection NoSQL
   - XSS basique
-- ✅ API REST sécurisée et organisée
+-  API REST sécurisée et organisée
 
 Le projet utilise **Node.js**, **Express**, **MongoDB** .
 
